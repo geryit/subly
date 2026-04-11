@@ -7,25 +7,25 @@ import type {
 type SessionCtx = {
   tabId: number;
   settings: Settings;
-  fakeTimer: number | null;
-  fakeIndex: number;
+  stream: MediaStream;
+  audioContext: AudioContext;
+  sourceNode: MediaStreamAudioSourceNode;
+  workletNode: AudioWorkletNode;
+  frameCount: number;
 };
 
 let ctx: SessionCtx | null = null;
-
-const FAKE_FINNISH_LINES = [
-  'Tervetuloa katsomaan ohjelmaa.',
-  'Tämä on testilause numero kaksi.',
-  'Subly toimii – oikea Whisper tulee seuraavassa vaiheessa.',
-  'Pipe on auki, viestit kulkevat oikein.',
-  'Onneksi olkoon — skelettiä rakennetaan.',
-];
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   handleMessage(msg as BackgroundToOffscreen)
     .then((r) => sendResponse(r))
     .catch((err) => {
       console.error('[Subly offscreen] error', err);
+      send({
+        type: 'OFFSCREEN_ERROR',
+        code: 'UNKNOWN',
+        message: err instanceof Error ? err.message : String(err),
+      });
       sendResponse({ ok: false });
     });
   return true;
@@ -33,34 +33,77 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
 async function handleMessage(msg: BackgroundToOffscreen) {
   if (msg.type === 'INIT') {
-    await startSession(msg.tabId, msg.settings);
+    await startSession(msg.streamId, msg.tabId, msg.settings);
     return { ok: true };
   }
   if (msg.type === 'SHUTDOWN') {
-    stopSession();
+    await stopSession();
     return { ok: true };
   }
 }
 
-async function startSession(tabId: number, settings: Settings) {
-  stopSession();
-  ctx = { tabId, settings, fakeTimer: null, fakeIndex: 0 };
+async function startSession(streamId: string, tabId: number, settings: Settings) {
+  await stopSession();
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      mandatory: {
+        chromeMediaSource: 'tab',
+        chromeMediaSourceId: streamId,
+      },
+    } as MediaTrackConstraints,
+    video: false,
+  });
+
+  const audioContext = new AudioContext();
+  const workletUrl = chrome.runtime.getURL('audio-collector.js');
+  await audioContext.audioWorklet.addModule(workletUrl);
+
+  const sourceNode = audioContext.createMediaStreamSource(stream);
+  const workletNode = new AudioWorkletNode(audioContext, 'audio-collector');
+
+  // Keep playing tab audio to the user
+  sourceNode.connect(audioContext.destination);
+  // Also tap into the worklet for future Whisper (worklet outputs nothing,
+  // but Chrome still needs a destination to run the graph)
+  sourceNode.connect(workletNode);
+  workletNode.connect(audioContext.destination);
+
+  workletNode.port.onmessage = (event: MessageEvent) => {
+    if (!ctx) return;
+    const data = event.data as { samples: Float32Array; sampleRate: number };
+    ctx.frameCount += 1;
+    if (ctx.frameCount % 100 === 0) {
+      console.log(
+        `[Subly offscreen] received ${ctx.frameCount} frames @ ${data.sampleRate} Hz, last length=${data.samples.length}`,
+      );
+    }
+  };
+
+  ctx = {
+    tabId,
+    settings,
+    stream,
+    audioContext,
+    sourceNode,
+    workletNode,
+    frameCount: 0,
+  };
+
   send({ type: 'OFFSCREEN_READY' });
-  ctx.fakeTimer = self.setInterval(() => emitFake(), 2500);
 }
 
-function stopSession() {
-  if (ctx?.fakeTimer !== null && ctx?.fakeTimer !== undefined) {
-    clearInterval(ctx.fakeTimer);
+async function stopSession() {
+  if (!ctx) return;
+  try {
+    ctx.workletNode.port.onmessage = null;
+    ctx.workletNode.disconnect();
+    ctx.sourceNode.disconnect();
+    ctx.stream.getTracks().forEach((t) => t.stop());
+    await ctx.audioContext.close();
+  } catch (err) {
+    console.warn('[Subly offscreen] cleanup error', err);
   }
   ctx = null;
-}
-
-function emitFake() {
-  if (!ctx) return;
-  const text = FAKE_FINNISH_LINES[ctx.fakeIndex % FAKE_FINNISH_LINES.length];
-  ctx.fakeIndex += 1;
-  send({ type: 'TRANSCRIPT', tabId: ctx.tabId, text });
 }
 
 function send(msg: OffscreenToBackground) {
