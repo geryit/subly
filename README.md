@@ -26,12 +26,17 @@ Then in Chrome:
 
 1. Play a video on any site.
 2. Click the Subly icon.
-3. Pick language (Finnish default), model size, and overlay position.
+3. Pick **Mode** (Transcribe = same language, or Translate to English), source language (Finnish default), model size, and overlay position.
 4. Click **Start**. The first session downloads the model — watch the progress bar in the popup.
 5. Subtitles appear on the page overlay. Close the popup — captioning continues.
 6. Click **Stop** when done.
 
-Changing language / model requires a **Stop** and **Start**. Font size and position apply live.
+Changing mode / language / model requires a **Stop** and **Start**. Font size and position apply live.
+
+### Translate vs Transcribe
+
+- **Transcribe** writes subtitles in the same language Whisper hears (e.g. Finnish audio → Finnish text).
+- **Translate to English** uses Whisper's built-in `translate` task: any supported source language → English text. Useful for watching foreign-language video without reading the source language.
 
 ## Architecture
 

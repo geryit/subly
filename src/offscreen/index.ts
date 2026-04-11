@@ -211,7 +211,7 @@ async function runTranscription(audioAtNative: Float32Array) {
   try {
     const result = await asr(resampled, {
       language,
-      task: 'transcribe',
+      task: ctx.settings.mode,
       return_timestamps: false,
     });
     const text = Array.isArray(result)

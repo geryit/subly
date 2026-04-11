@@ -2,6 +2,7 @@ import {
   DEFAULT_SETTINGS,
   type BackgroundToPopup,
   type Language,
+  type Mode,
   type ModelSize,
   type OverlayPosition,
   type PopupToBackground,
@@ -19,6 +20,7 @@ const progressBar = $<HTMLDivElement>('progress-bar');
 const progressText = $<HTMLDivElement>('progress-text');
 const errorBox = $<HTMLDivElement>('error');
 
+const modeSel = $<HTMLSelectElement>('mode');
 const languageSel = $<HTMLSelectElement>('language');
 const modelSel = $<HTMLSelectElement>('model');
 const fontSizeInput = $<HTMLInputElement>('font-size');
@@ -55,6 +57,7 @@ async function init() {
 }
 
 function applySettingsToControls() {
+  modeSel.value = settings.mode;
   languageSel.value = settings.language;
   modelSel.value = settings.model;
   fontSizeInput.value = String(settings.fontSizePx);
@@ -63,6 +66,11 @@ function applySettingsToControls() {
 }
 
 function wireSettingControls() {
+  modeSel.addEventListener('change', async () => {
+    settings.mode = modeSel.value as Mode;
+    await saveSettings(settings);
+    pushSettings();
+  });
   languageSel.addEventListener('change', async () => {
     settings.language = languageSel.value as Language;
     await saveSettings(settings);

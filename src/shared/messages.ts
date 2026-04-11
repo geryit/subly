@@ -3,10 +3,12 @@ export type SessionState = 'idle' | 'loading_model' | 'capturing' | 'error';
 export type Language = 'fi' | 'en' | 'sv';
 export type ModelSize = 'tiny' | 'base' | 'small';
 export type OverlayPosition = 'bottom' | 'top';
+export type Mode = 'transcribe' | 'translate';
 
 export type Settings = {
   language: Language;
   model: ModelSize;
+  mode: Mode;
   fontSizePx: number;
   position: OverlayPosition;
 };
@@ -14,6 +16,7 @@ export type Settings = {
 export const DEFAULT_SETTINGS: Settings = {
   language: 'fi',
   model: 'base',
+  mode: 'transcribe',
   fontSizePx: 20,
   position: 'bottom',
 };
