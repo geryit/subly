@@ -39,6 +39,9 @@ async function handleMessage(
     case 'GET_STATE':
       broadcastState(msg.tabId);
       return { ok: true };
+    case 'APPLY_SETTINGS':
+      forwardSettings(msg.tabId, msg.settings);
+      return { ok: true };
     case 'OFFSCREEN_READY':
       markAnyLoadingSessionCapturing();
       return { ok: true };
@@ -162,6 +165,11 @@ function broadcastPopup(msg: BackgroundToPopup) {
 
 function forwardTranscript(tabId: number, text: string) {
   const msg: BackgroundToContent = { type: 'TRANSCRIPT', text };
+  chrome.tabs.sendMessage(tabId, msg).catch(() => {});
+}
+
+function forwardSettings(tabId: number, settings: Settings) {
+  const msg: BackgroundToContent = { type: 'APPLY_SETTINGS', settings };
   chrome.tabs.sendMessage(tabId, msg).catch(() => {});
 }
 

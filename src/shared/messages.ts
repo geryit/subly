@@ -32,7 +32,8 @@ export type SubError = { code: ErrorCode; message: string };
 export type PopupToBackground =
   | { type: 'START'; tabId: number; settings: Settings }
   | { type: 'STOP'; tabId: number }
-  | { type: 'GET_STATE'; tabId: number };
+  | { type: 'GET_STATE'; tabId: number }
+  | { type: 'APPLY_SETTINGS'; tabId: number; settings: Settings };
 
 // Background → Popup (sent as responses and via port broadcast)
 export type BackgroundToPopup =

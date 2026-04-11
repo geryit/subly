@@ -66,19 +66,23 @@ function wireSettingControls() {
   languageSel.addEventListener('change', async () => {
     settings.language = languageSel.value as Language;
     await saveSettings(settings);
+    pushSettings();
   });
   modelSel.addEventListener('change', async () => {
     settings.model = modelSel.value as ModelSize;
     await saveSettings(settings);
+    pushSettings();
   });
   fontSizeInput.addEventListener('input', async () => {
     settings.fontSizePx = Number(fontSizeInput.value);
     fontSizeLabel.textContent = `${settings.fontSizePx}px`;
     await saveSettings(settings);
+    pushSettings();
   });
   positionSel.addEventListener('change', async () => {
     settings.position = positionSel.value as OverlayPosition;
     await saveSettings(settings);
+    pushSettings();
   });
 }
 
@@ -137,6 +141,11 @@ function sendToBackground(msg: PopupToBackground) {
   chrome.runtime.sendMessage(msg).catch((err) => {
     console.error('[Subly popup] sendMessage failed', err);
   });
+}
+
+function pushSettings() {
+  if (activeTabId === null) return;
+  sendToBackground({ type: 'APPLY_SETTINGS', tabId: activeTabId, settings });
 }
 
 init();
