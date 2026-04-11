@@ -12,6 +12,7 @@ let styleEl: HTMLStyleElement | null = null;
 let lines: string[] = [];
 let clearTimer: number | null = null;
 let settings: Settings = { ...DEFAULT_SETTINGS };
+let lastHref = location.href;
 
 async function init() {
   settings = await loadSettings();
@@ -91,12 +92,23 @@ function onFullscreenChange() {
 
 function observeDomForVideoChanges() {
   const observer = new MutationObserver(() => {
+    if (location.href !== lastHref) {
+      lastHref = location.href;
+      clearText();
+    }
     if (!overlay || !overlay.isConnected) {
       overlay = null;
       ensureOverlay();
     }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  window.addEventListener('popstate', () => {
+    if (location.href !== lastHref) {
+      lastHref = location.href;
+      clearText();
+    }
+  });
 }
 
 init();
