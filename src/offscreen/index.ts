@@ -13,6 +13,11 @@ import { LANGUAGE_TO_WHISPER, MODEL_IDS } from '../shared/messages';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
+// Override the jsdelivr CDN fallback for ONNX runtime WASM backends.
+// The files live in public/ort/ and are served from the extension origin.
+if (env.backends.onnx.wasm) {
+  env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL('ort/');
+}
 
 const WINDOW_SECONDS = 5;
 const OVERLAP_SECONDS = 1;

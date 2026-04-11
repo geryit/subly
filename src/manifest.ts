@@ -24,7 +24,11 @@ export default defineManifest({
   host_permissions: ['<all_urls>'],
   web_accessible_resources: [
     {
-      resources: ['src/offscreen/offscreen.html', 'audio-collector.js'],
+      resources: [
+        'src/offscreen/offscreen.html',
+        'audio-collector.js',
+        'ort/*',
+      ],
       matches: ['<all_urls>'],
     },
   ],
