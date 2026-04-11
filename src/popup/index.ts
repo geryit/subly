@@ -1,1 +1,142 @@
-export {};
+import {
+  DEFAULT_SETTINGS,
+  type BackgroundToPopup,
+  type Language,
+  type ModelSize,
+  type OverlayPosition,
+  type PopupToBackground,
+  type Settings,
+  type SessionState,
+} from '../shared/messages';
+import { loadSettings, saveSettings } from '../shared/settings';
+
+const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+const toggle = $<HTMLButtonElement>('toggle');
+const statusDot = $<HTMLSpanElement>('status-dot');
+const progress = $<HTMLDivElement>('progress');
+const progressBar = $<HTMLDivElement>('progress-bar');
+const progressText = $<HTMLDivElement>('progress-text');
+const errorBox = $<HTMLDivElement>('error');
+
+const languageSel = $<HTMLSelectElement>('language');
+const modelSel = $<HTMLSelectElement>('model');
+const fontSizeInput = $<HTMLInputElement>('font-size');
+const fontSizeLabel = $<HTMLSpanElement>('font-size-label');
+const positionSel = $<HTMLSelectElement>('position');
+
+let settings: Settings = { ...DEFAULT_SETTINGS };
+let currentState: SessionState = 'idle';
+let activeTabId: number | null = null;
+
+async function init() {
+  settings = await loadSettings();
+  applySettingsToControls();
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  activeTabId = tab?.id ?? null;
+
+  if (activeTabId !== null) {
+    sendToBackground({ type: 'GET_STATE', tabId: activeTabId });
+  } else {
+    renderError({ code: 'INVALID_TAB', message: 'No active tab.' });
+  }
+
+  wireSettingControls();
+  toggle.addEventListener('click', onToggleClick);
+
+  chrome.runtime.onMessage.addListener((msg: BackgroundToPopup) => {
+    if (msg.type === 'STATE') {
+      setState(msg.state, msg.error);
+    } else if (msg.type === 'MODEL_PROGRESS') {
+      showProgress(msg.loaded, msg.total);
+    }
+  });
+}
+
+function applySettingsToControls() {
+  languageSel.value = settings.language;
+  modelSel.value = settings.model;
+  fontSizeInput.value = String(settings.fontSizePx);
+  fontSizeLabel.textContent = `${settings.fontSizePx}px`;
+  positionSel.value = settings.position;
+}
+
+function wireSettingControls() {
+  languageSel.addEventListener('change', async () => {
+    settings.language = languageSel.value as Language;
+    await saveSettings(settings);
+  });
+  modelSel.addEventListener('change', async () => {
+    settings.model = modelSel.value as ModelSize;
+    await saveSettings(settings);
+  });
+  fontSizeInput.addEventListener('input', async () => {
+    settings.fontSizePx = Number(fontSizeInput.value);
+    fontSizeLabel.textContent = `${settings.fontSizePx}px`;
+    await saveSettings(settings);
+  });
+  positionSel.addEventListener('change', async () => {
+    settings.position = positionSel.value as OverlayPosition;
+    await saveSettings(settings);
+  });
+}
+
+function onToggleClick() {
+  if (activeTabId === null) return;
+  if (currentState === 'idle' || currentState === 'error') {
+    sendToBackground({ type: 'START', tabId: activeTabId, settings });
+  } else {
+    sendToBackground({ type: 'STOP', tabId: activeTabId });
+  }
+}
+
+function setState(state: SessionState, error?: { code: string; message: string }) {
+  currentState = state;
+  statusDot.className = '';
+  errorBox.hidden = true;
+  progress.hidden = state !== 'loading_model';
+
+  switch (state) {
+    case 'idle':
+      toggle.textContent = 'Start';
+      toggle.dataset.state = 'idle';
+      break;
+    case 'loading_model':
+      toggle.textContent = 'Loading…';
+      toggle.dataset.state = 'loading_model';
+      statusDot.classList.add('loading');
+      break;
+    case 'capturing':
+      toggle.textContent = 'Stop';
+      toggle.dataset.state = 'capturing';
+      statusDot.classList.add('active');
+      break;
+    case 'error':
+      toggle.textContent = 'Start';
+      toggle.dataset.state = 'idle';
+      statusDot.classList.add('error');
+      if (error) renderError(error);
+      break;
+  }
+}
+
+function renderError(error: { code: string; message: string }) {
+  errorBox.hidden = false;
+  errorBox.textContent = `${error.code}: ${error.message}`;
+}
+
+function showProgress(loaded: number, total: number) {
+  progress.hidden = false;
+  const pct = total > 0 ? Math.round((loaded / total) * 100) : 0;
+  progressBar.style.width = `${pct}%`;
+  progressText.textContent = `Loading model… ${pct}%`;
+}
+
+function sendToBackground(msg: PopupToBackground) {
+  chrome.runtime.sendMessage(msg).catch((err) => {
+    console.error('[Subly popup] sendMessage failed', err);
+  });
+}
+
+init();

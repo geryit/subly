@@ -1,0 +1,127 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f0f10;
+  --surface: #1a1a1c;
+  --border: #2a2a2d;
+  --text: #f2f2f2;
+  --muted: #8a8a90;
+  --accent: #22c55e;
+  --danger: #ef4444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+#status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #444;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+#status-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+#status-dot.loading { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+#status-dot.error { background: var(--danger); }
+
+button#toggle {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+button#toggle:hover { filter: brightness(1.1); }
+button#toggle[data-state="capturing"] {
+  background: var(--danger);
+  color: white;
+}
+button#toggle[data-state="loading_model"] {
+  background: #f59e0b;
+  color: var(--bg);
+}
+
+#progress {
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+#progress-bar {
+  height: 4px;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.2s;
+}
+#progress-text {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+#error {
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: #2a0f0f;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 12px;
+}
+
+.settings {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.settings select,
+.settings input[type="range"] {
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.settings input[type="range"] { padding: 0; }

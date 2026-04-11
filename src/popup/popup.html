@@ -1,2 +1,55 @@
 <!doctype html>
-<html><body><p>Subly</p><script type="module" src="index.ts"></script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header>
+        <h1>Subly</h1>
+        <span id="status-dot" aria-label="status"></span>
+      </header>
+
+      <button id="toggle" type="button" data-state="idle">Start</button>
+
+      <div id="progress" hidden>
+        <div id="progress-bar"></div>
+        <div id="progress-text">Loading model…</div>
+      </div>
+
+      <div id="error" hidden></div>
+
+      <section class="settings">
+        <label>
+          Language
+          <select id="language">
+            <option value="fi">Finnish</option>
+            <option value="en">English</option>
+            <option value="sv">Swedish</option>
+          </select>
+        </label>
+        <label>
+          Model
+          <select id="model">
+            <option value="tiny">Tiny (~41 MB, fastest)</option>
+            <option value="base">Base (~75 MB, balanced)</option>
+            <option value="small">Small (~244 MB, best)</option>
+          </select>
+        </label>
+        <label>
+          Font size <span id="font-size-label">20px</span>
+          <input id="font-size" type="range" min="12" max="40" value="20" />
+        </label>
+        <label>
+          Position
+          <select id="position">
+            <option value="bottom">Bottom</option>
+            <option value="top">Top</option>
+          </select>
+        </label>
+      </section>
+    </main>
+    <script type="module" src="index.ts"></script>
+  </body>
+</html>
