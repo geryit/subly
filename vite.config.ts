@@ -9,11 +9,4 @@ export default defineConfig({
     strictPort: true,
     hmr: { port: 5173 },
   },
-  build: {
-    rollupOptions: {
-      input: {
-        offscreen: 'src/offscreen/offscreen.html',
-      },
-    },
-  },
 });

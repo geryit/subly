@@ -6,3 +6,5 @@ dist/
 .vercel
 *.log
 .vite/
+package-lock.json
+yarn.lock
