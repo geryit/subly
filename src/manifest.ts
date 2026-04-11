@@ -22,6 +22,9 @@ export default defineManifest({
   ],
   permissions: ['activeTab', 'tabCapture', 'offscreen', 'storage', 'scripting'],
   host_permissions: ['<all_urls>'],
+  content_security_policy: {
+    extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+  },
   web_accessible_resources: [
     {
       resources: [
