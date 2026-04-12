@@ -73,9 +73,10 @@ async function startSession(tabId: number, settings: Settings) {
       tabId,
       settings,
     };
-    await chrome.runtime.sendMessage(initMsg);
-    // State stays 'loading_model' until the offscreen document
-    // finishes model load and emits OFFSCREEN_READY.
+    // Fire-and-forget — don't await because model loading can take minutes
+    // for large models and Chrome will timeout the message channel.
+    // State transitions are driven by OFFSCREEN_READY / OFFSCREEN_ERROR.
+    chrome.runtime.sendMessage(initMsg).catch(() => {});
   } catch (err) {
     session.state = 'error';
     session.error = {
