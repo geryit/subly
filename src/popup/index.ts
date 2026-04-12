@@ -24,6 +24,7 @@ const modeSel = $<HTMLSelectElement>('mode');
 const languageSel = $<HTMLSelectElement>('language');
 const modelSel = $<HTMLSelectElement>('model');
 const apiKeyLabel = $<HTMLLabelElement>('api-key-label');
+const apiKeyTitle = $<HTMLSpanElement>('api-key-title');
 const apiKeyInput = $<HTMLInputElement>('api-key');
 const fontSizeInput = $<HTMLInputElement>('font-size');
 const fontSizeLabel = $<HTMLSpanElement>('font-size-label');
@@ -62,8 +63,8 @@ function applySettingsToControls() {
   modeSel.value = settings.mode;
   languageSel.value = settings.language;
   modelSel.value = settings.model;
-  apiKeyInput.value = settings.groqApiKey ?? '';
-  apiKeyLabel.hidden = settings.model !== 'cloud';
+  apiKeyInput.value = getApiKey(settings);
+  updateApiKeyUI(settings.model);
   fontSizeInput.value = String(settings.fontSizePx);
   fontSizeLabel.textContent = `${settings.fontSizePx}px`;
   positionSel.value = settings.position;
@@ -82,12 +83,13 @@ function wireSettingControls() {
   });
   modelSel.addEventListener('change', async () => {
     settings.model = modelSel.value as ModelSize;
-    apiKeyLabel.hidden = settings.model !== 'cloud';
+    updateApiKeyUI(settings.model);
+    apiKeyInput.value = getApiKey(settings);
     await saveSettings(settings);
     pushSettings();
   });
   apiKeyInput.addEventListener('change', async () => {
-    settings.groqApiKey = apiKeyInput.value.trim() || undefined;
+    setApiKey(settings, apiKeyInput.value.trim());
     await saveSettings(settings);
     pushSettings();
   });
@@ -164,6 +166,43 @@ function sendToBackground(msg: PopupToBackground) {
 function pushSettings() {
   if (activeTabId === null) return;
   sendToBackground({ type: 'APPLY_SETTINGS', tabId: activeTabId, settings });
+}
+
+function isCloud(model: ModelSize): boolean {
+  return model.startsWith('cloud-');
+}
+
+function updateApiKeyUI(model: ModelSize) {
+  const cloud = isCloud(model);
+  apiKeyLabel.hidden = !cloud;
+  if (cloud) {
+    const labels: Record<string, [string, string]> = {
+      'cloud-groq': ['Groq API Key', 'gsk_...'],
+      'cloud-openai': ['OpenAI API Key', 'sk-...'],
+      'cloud-deepgram': ['Deepgram API Key', 'your key'],
+    };
+    const [title, placeholder] = labels[model] ?? ['API Key', ''];
+    apiKeyTitle.textContent = title;
+    apiKeyInput.placeholder = placeholder;
+  }
+}
+
+function getApiKey(s: Settings): string {
+  switch (s.model) {
+    case 'cloud-groq': return s.groqApiKey ?? '';
+    case 'cloud-openai': return s.openaiApiKey ?? '';
+    case 'cloud-deepgram': return s.deepgramApiKey ?? '';
+    default: return '';
+  }
+}
+
+function setApiKey(s: Settings, key: string) {
+  const val = key || undefined;
+  switch (s.model) {
+    case 'cloud-groq': s.groqApiKey = val; break;
+    case 'cloud-openai': s.openaiApiKey = val; break;
+    case 'cloud-deepgram': s.deepgramApiKey = val; break;
+  }
 }
 
 init();

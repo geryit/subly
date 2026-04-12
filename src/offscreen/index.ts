@@ -9,7 +9,7 @@ import type {
   OffscreenToBackground,
   Settings,
 } from '../shared/messages';
-import { LANGUAGE_TO_WHISPER, MODEL_IDS, type ModelSize } from '../shared/messages';
+import { LANGUAGE_TO_WHISPER, MODEL_IDS, type LocalModel, type Settings } from '../shared/messages';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
@@ -111,7 +111,7 @@ async function startSession(streamId: string, tabId: number, settings: Settings)
   };
 
   // Cloud mode skips local model loading entirely.
-  if (settings.model !== 'cloud') {
+  if (!settings.model.startsWith('cloud-')) {
     try {
       await ensureAsrPipeline(settings);
     } catch (err) {
@@ -142,7 +142,7 @@ async function stopSession() {
 }
 
 async function ensureAsrPipeline(settings: Settings) {
-  const modelId = MODEL_IDS[settings.model as Exclude<ModelSize, 'cloud'>];
+  const modelId = MODEL_IDS[settings.model as LocalModel];
   if (asr && asrModelKey === modelId) return;
 
   asr = null;
@@ -217,7 +217,7 @@ function onAudioFrame(frame: Float32Array) {
 async function runTranscription(audioAtNative: Float32Array) {
   if (!ctx) return;
 
-  if (ctx.settings.model === 'cloud') {
+  if (ctx.settings.model.startsWith('cloud-')) {
     await runCloudTranscription(audioAtNative);
   } else {
     await runLocalTranscription(audioAtNative);
@@ -257,61 +257,122 @@ async function runLocalTranscription(audioAtNative: Float32Array) {
   }
 }
 
+function getCloudApiKey(s: Settings): string | undefined {
+  switch (s.model) {
+    case 'cloud-groq': return s.groqApiKey;
+    case 'cloud-openai': return s.openaiApiKey;
+    case 'cloud-deepgram': return s.deepgramApiKey;
+    default: return undefined;
+  }
+}
+
 async function runCloudTranscription(audioAtNative: Float32Array) {
   if (!ctx) return;
   const tabId = ctx.tabId;
-  const apiKey = ctx.settings.groqApiKey;
+  const apiKey = getCloudApiKey(ctx.settings);
   if (!apiKey) {
-    send({ type: 'OFFSCREEN_ERROR', code: 'UNKNOWN', message: 'Groq API key is not set' });
+    send({ type: 'OFFSCREEN_ERROR', code: 'UNKNOWN', message: 'API key is not set' });
     return;
   }
 
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
   const wavBlob = encodeWav(resampled, TARGET_SAMPLE_RATE);
-
   const translate = ctx.settings.mode === 'translate' || ctx.settings.mode === 'translate-tr';
 
-  const model = translate ? 'whisper-large-v3' : 'whisper-large-v3-turbo';
+  let text: string;
+  try {
+    switch (ctx.settings.model) {
+      case 'cloud-groq':
+        text = await callOpenAICompatible(wavBlob, apiKey,
+          'https://api.groq.com/openai/v1',
+          translate ? 'whisper-large-v3' : 'whisper-large-v3-turbo',
+          translate, ctx.settings.language);
+        break;
+      case 'cloud-openai':
+        text = await callOpenAICompatible(wavBlob, apiKey,
+          'https://api.openai.com/v1',
+          'whisper-1',
+          translate, ctx.settings.language);
+        break;
+      case 'cloud-deepgram':
+        text = await callDeepgram(wavBlob, apiKey, ctx.settings.language);
+        break;
+      default:
+        return;
+    }
+  } catch (err) {
+    console.error('[Subly cloud] transcription error', err);
+    return;
+  }
+
+  text = text.trim();
+  // Deepgram has no translate endpoint — always use Google Translate for translate modes.
+  // Groq/OpenAI handle translate natively, so only translate-tr needs Google Translate.
+  const needsGoogleTranslate =
+    (ctx.settings.mode === 'translate-tr') ||
+    (ctx.settings.model === 'cloud-deepgram' && translate);
+  if (text.length > 0 && needsGoogleTranslate) {
+    const target = ctx.settings.mode === 'translate-tr' ? 'tr' : 'en';
+    try {
+      text = await translateText(text, target);
+    } catch (err) {
+      console.warn('[Subly] translation failed, showing original:', err);
+    }
+  }
+  if (text.length > 0) {
+    send({ type: 'TRANSCRIPT', tabId, text });
+  }
+}
+
+async function callOpenAICompatible(
+  wavBlob: Blob, apiKey: string, baseUrl: string,
+  model: string, translate: boolean, language: string,
+): Promise<string> {
+  const endpoint = translate
+    ? `${baseUrl}/audio/translations`
+    : `${baseUrl}/audio/transcriptions`;
 
   const form = new FormData();
   form.append('file', wavBlob, 'audio.wav');
   form.append('model', model);
   form.append('response_format', 'json');
   if (!translate) {
-    form.append('language', ctx.settings.language);
+    form.append('language', language);
   }
 
-  const endpoint = translate
-    ? 'https://api.groq.com/openai/v1/audio/translations'
-    : 'https://api.groq.com/openai/v1/audio/transcriptions';
-
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: form,
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      console.error('[Subly cloud] API error', res.status, body);
-      return;
-    }
-    const data = await res.json() as { text: string };
-    console.log('[Subly cloud] response:', JSON.stringify(data));
-    let text = data.text.trim();
-    if (text.length > 0 && ctx.settings.mode === 'translate-tr') {
-      try {
-        text = await translateText(text, 'tr');
-      } catch (err) {
-        console.warn('[Subly] translation failed, showing English:', err);
-      }
-    }
-    if (text.length > 0) {
-      send({ type: 'TRANSCRIPT', tabId, text });
-    }
-  } catch (err) {
-    console.error('[Subly cloud] transcription error', err);
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('[Subly cloud] API error', res.status, body);
+    return '';
   }
+  const data = await res.json() as { text: string };
+  return data.text;
+}
+
+async function callDeepgram(
+  wavBlob: Blob, apiKey: string, language: string,
+): Promise<string> {
+  const url = `https://api.deepgram.com/v1/listen?model=nova-2&language=${language}&smart_format=true`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Token ${apiKey}`,
+      'Content-Type': 'audio/wav',
+    },
+    body: wavBlob,
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('[Subly cloud] Deepgram error', res.status, body);
+    return '';
+  }
+  const data = await res.json();
+  return data.results?.channels?.[0]?.alternatives?.[0]?.transcript ?? '';
 }
 
 function encodeWav(samples: Float32Array, sampleRate: number): Blob {

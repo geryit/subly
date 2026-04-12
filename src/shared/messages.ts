@@ -1,7 +1,9 @@
 export type SessionState = 'idle' | 'loading_model' | 'capturing' | 'error';
 
 export type Language = 'fi' | 'en' | 'sv' | 'tr';
-export type ModelSize = 'tiny' | 'base' | 'small' | 'cloud';
+export type LocalModel = 'tiny' | 'base' | 'small';
+export type CloudProvider = 'cloud-groq' | 'cloud-openai' | 'cloud-deepgram';
+export type ModelSize = LocalModel | CloudProvider;
 export type OverlayPosition = 'bottom' | 'top';
 export type Mode = 'transcribe' | 'translate' | 'translate-tr';
 
@@ -12,6 +14,8 @@ export type Settings = {
   fontSizePx: number;
   position: OverlayPosition;
   groqApiKey?: string;
+  openaiApiKey?: string;
+  deepgramApiKey?: string;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -62,7 +66,7 @@ export type BackgroundToContent =
   | { type: 'CLEAR_OVERLAY' }
   | { type: 'APPLY_SETTINGS'; settings: Settings };
 
-export const MODEL_IDS: Record<Exclude<ModelSize, 'cloud'>, string> = {
+export const MODEL_IDS: Record<LocalModel, string> = {
   tiny: 'Xenova/whisper-tiny',
   base: 'Xenova/whisper-base',
   small: 'Xenova/whisper-small',

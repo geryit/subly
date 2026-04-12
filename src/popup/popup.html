@@ -44,11 +44,13 @@
             <option value="tiny">Tiny (~41 MB, fastest)</option>
             <option value="base">Base (~75 MB, balanced)</option>
             <option value="small">Small (~244 MB, best local)</option>
-            <option value="cloud">Cloud — Groq (highest quality)</option>
+            <option value="cloud-groq">Cloud — Groq (free tier)</option>
+            <option value="cloud-openai">Cloud — OpenAI ($0.006/min)</option>
+            <option value="cloud-deepgram">Cloud — Deepgram (free tier)</option>
           </select>
         </label>
         <label id="api-key-label" hidden>
-          Groq API Key
+          <span id="api-key-title">API Key</span>
           <input id="api-key" type="password" placeholder="gsk_..." />
         </label>
         <label>
