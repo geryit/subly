@@ -248,8 +248,10 @@ async function runTranscription(audioAtNative: Float32Array) {
       : result.text;
     text = text.trim();
     if (text.length > 0 && ctx.settings.mode === 'translate-tr' && translator) {
+      console.log('[Subly] Whisper EN:', text);
       const trResult = await translator(text) as { translation_text: string } | { translation_text: string }[];
       const trText = Array.isArray(trResult) ? trResult[0].translation_text : trResult.translation_text;
+      console.log('[Subly] OpusMT TR:', trText);
       text = trText.trim();
     }
     if (text.length > 0) {
