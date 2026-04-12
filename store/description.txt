@@ -1,0 +1,39 @@
+Subly — Live AI Subtitles for Any Video
+
+Add real-time subtitles to any video playing in your browser. Subly captures tab audio and transcribes it locally using AI — no cloud services, no subscriptions, no API keys.
+
+FEATURES
+
+- Live subtitles for any HTML5 video on any website
+- Fully local transcription — your audio never leaves your device
+- Powered by OpenAI's Whisper model running directly in your browser
+- Translate to English mode — watch foreign-language content with English subtitles
+- Translate to Turkish mode — get Turkish subtitles via Google Translate
+- Supports Finnish, English, Swedish, and Turkish as source languages
+- Customizable font size and subtitle position
+- Works in fullscreen mode
+- Three model sizes: Tiny (fast), Base (balanced), Small (best quality)
+- WebGPU accelerated for near real-time performance
+
+HOW IT WORKS
+
+1. Play any video in your browser
+2. Click the Subly icon and choose your settings
+3. Click Start — subtitles appear within seconds
+4. Click Stop when you're done
+
+PRIVACY FIRST
+
+All speech recognition runs locally on your device using WebGPU/WASM. No audio is ever uploaded to any server. The Whisper AI model is downloaded once (~75 MB) and cached in your browser.
+
+Note: "Translate to Turkish" mode sends the transcribed text (not audio) to Google Translate.
+
+REQUIREMENTS
+
+- Chrome 116 or later
+- WebGPU recommended for best performance (Chrome 113+)
+- ~75-244 MB storage for AI model (downloaded on first use)
+
+OPEN SOURCE
+
+Subly is open source: github.com/geryit/subly

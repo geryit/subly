@@ -1,0 +1,53 @@
+name: Create Release on Main Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "latest"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Bump version and push tag
+        id: bump
+        uses: anothrNick/github-tag-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: false
+
+      - name: Update versions
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new_tag }}
+        run: |
+          sed -i "s/\"version\": \".*\"/\"version\": \"$NEW_VERSION\"/" package.json
+          sed -i "s/version: '.*'/version: '$NEW_VERSION'/" src/manifest.ts
+
+      - name: Build
+        run: pnpm install && pnpm build
+
+      - name: Create ZIP file
+        run: |
+          cd dist && zip -r ../subly.zip *
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: subly.zip
+          tag_name: ${{ steps.bump.outputs.new_tag }}
