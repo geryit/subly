@@ -2,6 +2,7 @@ import {
   env,
   pipeline,
   type AutomaticSpeechRecognitionPipeline,
+  type TranslationPipeline,
   type ProgressInfo,
 } from '@huggingface/transformers';
 import type {
@@ -39,6 +40,7 @@ type SessionCtx = {
 let ctx: SessionCtx | null = null;
 let asr: AutomaticSpeechRecognitionPipeline | null = null;
 let asrModelKey: string | null = null;
+let translator: TranslationPipeline | null = null;
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   handleMessage(msg as BackgroundToOffscreen)
@@ -71,6 +73,9 @@ async function startSession(streamId: string, tabId: number, settings: Settings)
 
   try {
     await ensureAsrPipeline(settings);
+    if (settings.mode === 'translate-tr') {
+      await ensureTranslatorPipeline();
+    }
   } catch (err) {
     send({
       type: 'OFFSCREEN_ERROR',
@@ -182,6 +187,25 @@ async function ensureAsrPipeline(settings: Settings) {
   asrModelKey = modelId;
 }
 
+async function ensureTranslatorPipeline() {
+  if (translator) return;
+  const progressReporter = (progress: ProgressInfo) => {
+    if (progress.status === 'progress') {
+      send({
+        type: 'MODEL_PROGRESS',
+        loaded: progress.loaded,
+        total: progress.total,
+      });
+    }
+  };
+  const created = await pipeline('translation', 'Xenova/opus-mt-en-tr', {
+    device: 'wasm',
+    dtype: 'fp32',
+    progress_callback: progressReporter,
+  });
+  translator = created as unknown as TranslationPipeline;
+}
+
 function onAudioFrame(frame: Float32Array) {
   if (!ctx) return;
   ctx.buffer.push(frame);
@@ -211,17 +235,23 @@ async function runTranscription(audioAtNative: Float32Array) {
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
 
   try {
+    const whisperTask = ctx.settings.mode === 'translate-tr' ? 'translate' : ctx.settings.mode;
     const result = await asr(resampled, {
       language,
-      task: ctx.settings.mode,
+      task: whisperTask,
       return_timestamps: false,
     });
-    const text = Array.isArray(result)
+    let text = Array.isArray(result)
       ? result.map((r) => r.text).join(' ')
       : result.text;
-    const trimmed = text.trim();
-    if (trimmed.length > 0) {
-      send({ type: 'TRANSCRIPT', tabId, text: trimmed });
+    text = text.trim();
+    if (text.length > 0 && ctx.settings.mode === 'translate-tr' && translator) {
+      const trResult = await translator(text) as { translation_text: string } | { translation_text: string }[];
+      const trText = Array.isArray(trResult) ? trResult[0].translation_text : trResult.translation_text;
+      text = trText.trim();
+    }
+    if (text.length > 0) {
+      send({ type: 'TRANSCRIPT', tabId, text });
     }
   } catch (err) {
     console.error('[Subly offscreen] transcription error', err);

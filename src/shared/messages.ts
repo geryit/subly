@@ -3,7 +3,7 @@ export type SessionState = 'idle' | 'loading_model' | 'capturing' | 'error';
 export type Language = 'fi' | 'en' | 'sv' | 'tr';
 export type ModelSize = 'tiny' | 'base' | 'small';
 export type OverlayPosition = 'bottom' | 'top';
-export type Mode = 'transcribe' | 'translate';
+export type Mode = 'transcribe' | 'translate' | 'translate-tr';
 
 export type Settings = {
   language: Language;
