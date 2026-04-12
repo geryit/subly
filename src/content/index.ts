@@ -111,4 +111,6 @@ function observeDomForVideoChanges() {
   });
 }
 
-init();
+if (typeof document !== 'undefined') {
+  init();
+}
