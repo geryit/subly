@@ -157,6 +157,7 @@ async function ensureAsrPipeline(settings: Settings) {
   try {
     const created = await pipeline('automatic-speech-recognition', modelId, {
       device: 'webgpu',
+      dtype: 'fp32',
       progress_callback: progressReporter,
     });
     asr = created as unknown as AutomaticSpeechRecognitionPipeline;
@@ -168,6 +169,7 @@ async function ensureAsrPipeline(settings: Settings) {
     try {
       const created = await pipeline('automatic-speech-recognition', modelId, {
         device: 'wasm',
+        dtype: 'fp32',
         progress_callback: progressReporter,
       });
       asr = created as unknown as AutomaticSpeechRecognitionPipeline;
