@@ -198,7 +198,7 @@ async function ensureTranslatorPipeline() {
       });
     }
   };
-  const created = await pipeline('translation', 'Xenova/opus-mt-en-tr', {
+  const created = await pipeline('translation', 'onnx-community/opus-mt-tc-big-en-tr', {
     device: 'wasm',
     dtype: 'fp32',
     progress_callback: progressReporter,
