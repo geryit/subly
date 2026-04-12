@@ -23,6 +23,8 @@ const errorBox = $<HTMLDivElement>('error');
 const modeSel = $<HTMLSelectElement>('mode');
 const languageSel = $<HTMLSelectElement>('language');
 const modelSel = $<HTMLSelectElement>('model');
+const apiKeyLabel = $<HTMLLabelElement>('api-key-label');
+const apiKeyInput = $<HTMLInputElement>('api-key');
 const fontSizeInput = $<HTMLInputElement>('font-size');
 const fontSizeLabel = $<HTMLSpanElement>('font-size-label');
 const positionSel = $<HTMLSelectElement>('position');
@@ -60,6 +62,8 @@ function applySettingsToControls() {
   modeSel.value = settings.mode;
   languageSel.value = settings.language;
   modelSel.value = settings.model;
+  apiKeyInput.value = settings.groqApiKey ?? '';
+  apiKeyLabel.hidden = settings.model !== 'cloud';
   fontSizeInput.value = String(settings.fontSizePx);
   fontSizeLabel.textContent = `${settings.fontSizePx}px`;
   positionSel.value = settings.position;
@@ -78,6 +82,12 @@ function wireSettingControls() {
   });
   modelSel.addEventListener('change', async () => {
     settings.model = modelSel.value as ModelSize;
+    apiKeyLabel.hidden = settings.model !== 'cloud';
+    await saveSettings(settings);
+    pushSettings();
+  });
+  apiKeyInput.addEventListener('change', async () => {
+    settings.groqApiKey = apiKeyInput.value.trim() || undefined;
     await saveSettings(settings);
     pushSettings();
   });

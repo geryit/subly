@@ -9,7 +9,7 @@ import type {
   OffscreenToBackground,
   Settings,
 } from '../shared/messages';
-import { LANGUAGE_TO_WHISPER, MODEL_IDS } from '../shared/messages';
+import { LANGUAGE_TO_WHISPER, MODEL_IDS, type ModelSize } from '../shared/messages';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
@@ -110,16 +110,18 @@ async function startSession(streamId: string, tabId: number, settings: Settings)
     onAudioFrame(data.samples);
   };
 
-  // Load models AFTER capture is running — audio buffers while models download.
-  try {
-    await ensureAsrPipeline(settings);
-  } catch (err) {
-    send({
-      type: 'OFFSCREEN_ERROR',
-      code: 'MODEL_LOAD_FAILED',
-      message: err instanceof Error ? err.message : String(err),
-    });
-    return;
+  // Cloud mode skips local model loading entirely.
+  if (settings.model !== 'cloud') {
+    try {
+      await ensureAsrPipeline(settings);
+    } catch (err) {
+      send({
+        type: 'OFFSCREEN_ERROR',
+        code: 'MODEL_LOAD_FAILED',
+        message: err instanceof Error ? err.message : String(err),
+      });
+      return;
+    }
   }
 
   send({ type: 'OFFSCREEN_READY' });
@@ -140,7 +142,7 @@ async function stopSession() {
 }
 
 async function ensureAsrPipeline(settings: Settings) {
-  const modelId = MODEL_IDS[settings.model];
+  const modelId = MODEL_IDS[settings.model as Exclude<ModelSize, 'cloud'>];
   if (asr && asrModelKey === modelId) return;
 
   asr = null;
@@ -213,6 +215,16 @@ function onAudioFrame(frame: Float32Array) {
 }
 
 async function runTranscription(audioAtNative: Float32Array) {
+  if (!ctx) return;
+
+  if (ctx.settings.model === 'cloud') {
+    await runCloudTranscription(audioAtNative);
+  } else {
+    await runLocalTranscription(audioAtNative);
+  }
+}
+
+async function runLocalTranscription(audioAtNative: Float32Array) {
   if (!ctx || !asr) return;
   const tabId = ctx.tabId;
   const language = LANGUAGE_TO_WHISPER[ctx.settings.language];
@@ -243,6 +255,89 @@ async function runTranscription(audioAtNative: Float32Array) {
   } catch (err) {
     console.error('[Subly offscreen] transcription error', err);
   }
+}
+
+async function runCloudTranscription(audioAtNative: Float32Array) {
+  if (!ctx) return;
+  const tabId = ctx.tabId;
+  const apiKey = ctx.settings.groqApiKey;
+  if (!apiKey) {
+    send({ type: 'OFFSCREEN_ERROR', code: 'UNKNOWN', message: 'Groq API key is not set' });
+    return;
+  }
+
+  const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
+  const wavBlob = encodeWav(resampled, TARGET_SAMPLE_RATE);
+
+  const task = ctx.settings.mode === 'translate' || ctx.settings.mode === 'translate-tr'
+    ? 'translate' : 'transcribe';
+
+  const form = new FormData();
+  form.append('file', wavBlob, 'audio.wav');
+  form.append('model', 'whisper-large-v3-turbo');
+  form.append('language', ctx.settings.language);
+  form.append('response_format', 'json');
+  if (task === 'translate') {
+    form.append('task', 'translate');
+  }
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error('[Subly cloud] API error', res.status, body);
+      return;
+    }
+    const data = await res.json() as { text: string };
+    let text = data.text.trim();
+    if (text.length > 0 && ctx.settings.mode === 'translate-tr') {
+      try {
+        text = await translateText(text, 'tr');
+      } catch (err) {
+        console.warn('[Subly] translation failed, showing English:', err);
+      }
+    }
+    if (text.length > 0) {
+      send({ type: 'TRANSCRIPT', tabId, text });
+    }
+  } catch (err) {
+    console.error('[Subly cloud] transcription error', err);
+  }
+}
+
+function encodeWav(samples: Float32Array, sampleRate: number): Blob {
+  const numSamples = samples.length;
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);           // PCM
+  view.setUint16(22, 1, true);           // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);           // block align
+  view.setUint16(34, 16, true);          // bits per sample
+  writeString(36, 'data');
+  view.setUint32(40, numSamples * 2, true);
+
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' });
 }
 
 function concatFloat32(chunks: Float32Array[], totalLength: number): Float32Array {

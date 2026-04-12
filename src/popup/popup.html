@@ -43,9 +43,13 @@
           <select id="model">
             <option value="tiny">Tiny (~41 MB, fastest)</option>
             <option value="base">Base (~75 MB, balanced)</option>
-            <option value="small">Small (~244 MB, best)</option>
-            <option value="large-v3-turbo">Large v3 Turbo (~850 MB, highest quality)</option>
+            <option value="small">Small (~244 MB, best local)</option>
+            <option value="cloud">Cloud — Groq (highest quality)</option>
           </select>
+        </label>
+        <label id="api-key-label" hidden>
+          Groq API Key
+          <input id="api-key" type="password" placeholder="gsk_..." />
         </label>
         <label>
           Font size <span id="font-size-label">20px</span>
