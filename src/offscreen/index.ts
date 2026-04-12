@@ -271,9 +271,11 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
 
   const translate = ctx.settings.mode === 'translate' || ctx.settings.mode === 'translate-tr';
 
+  const model = translate ? 'whisper-large-v3' : 'whisper-large-v3-turbo';
+
   const form = new FormData();
   form.append('file', wavBlob, 'audio.wav');
-  form.append('model', 'whisper-large-v3-turbo');
+  form.append('model', model);
   form.append('response_format', 'json');
   if (!translate) {
     form.append('language', ctx.settings.language);
