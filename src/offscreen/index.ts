@@ -2,7 +2,6 @@ import {
   env,
   pipeline,
   type AutomaticSpeechRecognitionPipeline,
-  type TranslationPipeline,
   type ProgressInfo,
 } from '@huggingface/transformers';
 import type {
@@ -40,7 +39,6 @@ type SessionCtx = {
 let ctx: SessionCtx | null = null;
 let asr: AutomaticSpeechRecognitionPipeline | null = null;
 let asrModelKey: string | null = null;
-let translator: TranslationPipeline | null = null;
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   handleMessage(msg as BackgroundToOffscreen)
@@ -115,9 +113,6 @@ async function startSession(streamId: string, tabId: number, settings: Settings)
   // Load models AFTER capture is running — audio buffers while models download.
   try {
     await ensureAsrPipeline(settings);
-    if (settings.mode === 'translate-tr') {
-      await ensureTranslatorPipeline();
-    }
   } catch (err) {
     send({
       type: 'OFFSCREEN_ERROR',
@@ -189,23 +184,11 @@ async function ensureAsrPipeline(settings: Settings) {
   asrModelKey = modelId;
 }
 
-async function ensureTranslatorPipeline() {
-  if (translator) return;
-  const progressReporter = (progress: ProgressInfo) => {
-    if (progress.status === 'progress') {
-      send({
-        type: 'MODEL_PROGRESS',
-        loaded: progress.loaded,
-        total: progress.total,
-      });
-    }
-  };
-  const created = await pipeline('translation', 'Xenova/nllb-200-distilled-600M', {
-    device: 'wasm',
-    dtype: 'q4',
-    progress_callback: progressReporter,
-  });
-  translator = created as unknown as TranslationPipeline;
+async function translateText(text: string, targetLang: string): Promise<string> {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data[0].map((s: [string]) => s[0]).join('');
 }
 
 function onAudioFrame(frame: Float32Array) {
@@ -247,15 +230,12 @@ async function runTranscription(audioAtNative: Float32Array) {
       ? result.map((r) => r.text).join(' ')
       : result.text;
     text = text.trim();
-    if (text.length > 0 && ctx.settings.mode === 'translate-tr' && translator) {
-      console.log('[Subly] Whisper EN:', text);
-      const trResult = await translator(text, {
-        src_lang: 'eng_Latn',
-        tgt_lang: 'tur_Latn',
-      }) as { translation_text: string } | { translation_text: string }[];
-      const trText = Array.isArray(trResult) ? trResult[0].translation_text : trResult.translation_text;
-      console.log('[Subly] NLLB TR:', trText);
-      text = trText.trim();
+    if (text.length > 0 && ctx.settings.mode === 'translate-tr') {
+      try {
+        text = await translateText(text, 'tr');
+      } catch (err) {
+        console.warn('[Subly] translation failed, showing English:', err);
+      }
     }
     if (text.length > 0) {
       send({ type: 'TRANSCRIPT', tabId, text });
