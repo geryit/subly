@@ -46,7 +46,7 @@ async function handleMessage(
       markAnyLoadingSessionCapturing();
       return { ok: true };
     case 'TRANSCRIPT':
-      forwardTranscript(msg.tabId, msg.text);
+      await forwardTranscript(msg.tabId, msg.text);
       return { ok: true };
     case 'MODEL_PROGRESS':
       broadcastPopup({ type: 'MODEL_PROGRESS', loaded: msg.loaded, total: msg.total });
@@ -164,9 +164,9 @@ function broadcastPopup(msg: BackgroundToPopup) {
   });
 }
 
-function forwardTranscript(tabId: number, text: string) {
+async function forwardTranscript(tabId: number, text: string) {
   const msg: BackgroundToContent = { type: 'TRANSCRIPT', text };
-  chrome.tabs.sendMessage(tabId, msg).catch(() => {});
+  await chrome.tabs.sendMessage(tabId, msg).catch(() => {});
 }
 
 function forwardSettings(tabId: number, settings: Settings) {

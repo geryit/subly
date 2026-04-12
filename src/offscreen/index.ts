@@ -297,6 +297,7 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
       return;
     }
     const data = await res.json() as { text: string };
+    console.log('[Subly cloud] response:', JSON.stringify(data));
     let text = data.text.trim();
     if (text.length > 0 && ctx.settings.mode === 'translate-tr') {
       try {
