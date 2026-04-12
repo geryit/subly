@@ -19,6 +19,9 @@ type TabSession = {
 const sessions = new Map<number, TabSession>();
 const OFFSCREEN_URL = 'src/offscreen/offscreen.html';
 
+const ICON_DEFAULT = { 16: 'icons/16.png', 48: 'icons/48.png', 128: 'icons/128.png' };
+const ICON_ACTIVE = { 16: 'icons/16-active.png', 48: 'icons/48-active.png', 128: 'icons/128-active.png' };
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   handleMessage(message as PopupToBackground | OffscreenToBackground)
     .then((response) => sendResponse(response))
@@ -156,6 +159,14 @@ function broadcastState(tabId: number) {
   const state: SessionState = session?.state ?? 'idle';
   const msg: BackgroundToPopup = { type: 'STATE', state, error: session?.error };
   broadcastPopup(msg);
+  updateIcon();
+}
+
+function updateIcon() {
+  const anyActive = [...sessions.values()].some(
+    (s) => s.state === 'capturing' || s.state === 'loading_model',
+  );
+  chrome.action.setIcon({ path: anyActive ? ICON_ACTIVE : ICON_DEFAULT });
 }
 
 function broadcastPopup(msg: BackgroundToPopup) {

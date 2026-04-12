@@ -31,6 +31,7 @@ export default defineManifest({
         'src/offscreen/offscreen.html',
         'audio-collector.js',
         'ort/*',
+        'icons/*',
       ],
       matches: ['<all_urls>'],
     },
