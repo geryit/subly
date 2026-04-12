@@ -200,9 +200,9 @@ async function ensureTranslatorPipeline() {
       });
     }
   };
-  const created = await pipeline('translation', 'onnx-community/opus-mt-tc-big-en-tr', {
+  const created = await pipeline('translation', 'Xenova/nllb-200-distilled-600M', {
     device: 'wasm',
-    dtype: 'fp32',
+    dtype: 'q4',
     progress_callback: progressReporter,
   });
   translator = created as unknown as TranslationPipeline;
@@ -249,9 +249,12 @@ async function runTranscription(audioAtNative: Float32Array) {
     text = text.trim();
     if (text.length > 0 && ctx.settings.mode === 'translate-tr' && translator) {
       console.log('[Subly] Whisper EN:', text);
-      const trResult = await translator(text) as { translation_text: string } | { translation_text: string }[];
+      const trResult = await translator(text, {
+        src_lang: 'eng_Latn',
+        tgt_lang: 'tur_Latn',
+      }) as { translation_text: string } | { translation_text: string }[];
       const trText = Array.isArray(trResult) ? trResult[0].translation_text : trResult.translation_text;
-      console.log('[Subly] OpusMT TR:', trText);
+      console.log('[Subly] NLLB TR:', trText);
       text = trText.trim();
     }
     if (text.length > 0) {
