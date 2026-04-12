@@ -269,20 +269,22 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
   const wavBlob = encodeWav(resampled, TARGET_SAMPLE_RATE);
 
-  const task = ctx.settings.mode === 'translate' || ctx.settings.mode === 'translate-tr'
-    ? 'translate' : 'transcribe';
+  const translate = ctx.settings.mode === 'translate' || ctx.settings.mode === 'translate-tr';
 
   const form = new FormData();
   form.append('file', wavBlob, 'audio.wav');
   form.append('model', 'whisper-large-v3-turbo');
-  form.append('language', ctx.settings.language);
   form.append('response_format', 'json');
-  if (task === 'translate') {
-    form.append('task', 'translate');
+  if (!translate) {
+    form.append('language', ctx.settings.language);
   }
 
+  const endpoint = translate
+    ? 'https://api.groq.com/openai/v1/audio/translations'
+    : 'https://api.groq.com/openai/v1/audio/transcriptions';
+
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}` },
       body: form,
