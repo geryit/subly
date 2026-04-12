@@ -71,20 +71,7 @@ async function handleMessage(msg: BackgroundToOffscreen) {
 async function startSession(streamId: string, tabId: number, settings: Settings) {
   await stopSession();
 
-  try {
-    await ensureAsrPipeline(settings);
-    if (settings.mode === 'translate-tr') {
-      await ensureTranslatorPipeline();
-    }
-  } catch (err) {
-    send({
-      type: 'OFFSCREEN_ERROR',
-      code: 'MODEL_LOAD_FAILED',
-      message: err instanceof Error ? err.message : String(err),
-    });
-    return;
-  }
-
+  // Capture audio FIRST — streamId expires if we wait too long (model download).
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: {
       mandatory: {
@@ -124,6 +111,21 @@ async function startSession(streamId: string, tabId: number, settings: Settings)
     const data = event.data as { samples: Float32Array; sampleRate: number };
     onAudioFrame(data.samples);
   };
+
+  // Load models AFTER capture is running — audio buffers while models download.
+  try {
+    await ensureAsrPipeline(settings);
+    if (settings.mode === 'translate-tr') {
+      await ensureTranslatorPipeline();
+    }
+  } catch (err) {
+    send({
+      type: 'OFFSCREEN_ERROR',
+      code: 'MODEL_LOAD_FAILED',
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return;
+  }
 
   send({ type: 'OFFSCREEN_READY' });
 }
