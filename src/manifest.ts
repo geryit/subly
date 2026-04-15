@@ -3,7 +3,7 @@ import { defineManifest } from '@crxjs/vite-plugin';
 export default defineManifest({
   manifest_version: 3,
   name: 'Subly',
-  version: '0.1.0',
+  version: '0.1.1',
   description: 'Live AI subtitles for any HTML5 video',
   action: {
     default_popup: 'src/popup/popup.html',
@@ -20,7 +20,7 @@ export default defineManifest({
       all_frames: true,
     },
   ],
-  permissions: ['activeTab', 'tabCapture', 'offscreen', 'storage', 'scripting'],
+  permissions: ['activeTab', 'tabCapture', 'offscreen', 'storage'],
   host_permissions: ['<all_urls>'],
   content_security_policy: {
     extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
