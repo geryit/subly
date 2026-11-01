@@ -11,18 +11,38 @@
         <span id="status-dot" aria-label="status"></span>
       </header>
 
-      <button id="toggle" type="button" data-state="idle">Start</button>
-
-      <div id="progress" hidden>
-        <div id="progress-bar"></div>
-        <div id="progress-text">Loading model…</div>
-      </div>
-
-      <div id="error" hidden></div>
-
       <section class="settings">
         <label>
-          Mode
+          Video language
+          <span class="hint">The language people speak in the video</span>
+          <select id="language">
+            <option value="ar">Arabic</option>
+            <option value="bn">Bengali</option>
+            <option value="zh">Chinese</option>
+            <option value="en">English</option>
+            <option value="fi">Finnish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="hi">Hindi</option>
+            <option value="id">Indonesian</option>
+            <option value="it">Italian</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="mr">Marathi</option>
+            <option value="pt">Portuguese</option>
+            <option value="ru">Russian</option>
+            <option value="es">Spanish</option>
+            <option value="sv">Swedish</option>
+            <option value="ta">Tamil</option>
+            <option value="te">Telugu</option>
+            <option value="tr">Turkish</option>
+            <option value="ur">Urdu</option>
+            <option value="vi">Vietnamese</option>
+          </select>
+        </label>
+        <label>
+          Subtitles
+          <span class="hint">Keep the spoken language or translate it</span>
           <select id="mode">
             <option value="transcribe">Transcribe (same language)</option>
             <option value="translate">Translate to English</option>
@@ -30,20 +50,12 @@
           </select>
         </label>
         <label>
-          Source language
-          <select id="language">
-            <option value="fi">Finnish</option>
-            <option value="en">English</option>
-            <option value="sv">Swedish</option>
-            <option value="tr">Turkish</option>
-          </select>
-        </label>
-        <label>
           Model
+          <span class="hint">Local runs in your browser, cloud needs an API key</span>
           <select id="model">
-            <option value="tiny">Tiny (~41 MB, fastest)</option>
-            <option value="base">Base (~75 MB, balanced)</option>
-            <option value="small">Small (~244 MB, best local)</option>
+            <option value="tiny">Tiny (OpenAI Whisper, ~41 MB)</option>
+            <option value="base">Base (OpenAI Whisper, ~75 MB)</option>
+            <option value="small">Small (OpenAI Whisper, ~244 MB)</option>
             <option value="cloud-groq">Cloud — Groq (free tier)</option>
             <option value="cloud-openai">Cloud — OpenAI ($0.006/min)</option>
             <option value="cloud-deepgram">Cloud — Deepgram (free tier)</option>
@@ -51,6 +63,7 @@
         </label>
         <label id="api-key-label" hidden>
           <span id="api-key-title">API Key</span>
+          <span class="hint">Your personal key from the provider's website</span>
           <input id="api-key" type="password" placeholder="gsk_..." />
         </label>
         <label>
@@ -59,12 +72,22 @@
         </label>
         <label>
           Position
+          <span class="hint">Where subtitles appear on the video</span>
           <select id="position">
             <option value="bottom">Bottom</option>
             <option value="top">Top</option>
           </select>
         </label>
       </section>
+
+      <button id="toggle" type="button" data-state="idle">Start subtitles</button>
+
+      <div id="progress" hidden>
+        <div id="progress-bar"></div>
+        <div id="progress-text">Loading model…</div>
+      </div>
+
+      <div id="error" hidden></div>
     </main>
     <script type="module" src="index.ts"></script>
   </body>

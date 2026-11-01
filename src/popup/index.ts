@@ -1,4 +1,5 @@
 import {
+  DEEPGRAM_UNSUPPORTED,
   DEFAULT_SETTINGS,
   type BackgroundToPopup,
   type Language,
@@ -65,6 +66,7 @@ function applySettingsToControls() {
   modelSel.value = settings.model;
   apiKeyInput.value = getApiKey(settings);
   updateApiKeyUI(settings.model);
+  updateLanguageOptions(settings.model);
   fontSizeInput.value = String(settings.fontSizePx);
   fontSizeLabel.textContent = `${settings.fontSizePx}px`;
   positionSel.value = settings.position;
@@ -84,6 +86,7 @@ function wireSettingControls() {
   modelSel.addEventListener('change', async () => {
     settings.model = modelSel.value as ModelSize;
     updateApiKeyUI(settings.model);
+    updateLanguageOptions(settings.model);
     apiKeyInput.value = getApiKey(settings);
     await saveSettings(settings);
     pushSettings();
@@ -123,7 +126,7 @@ function setState(state: SessionState, error?: { code: string; message: string }
 
   switch (state) {
     case 'idle':
-      toggle.textContent = 'Start';
+      toggle.textContent = 'Start subtitles';
       toggle.dataset.state = 'idle';
       break;
     case 'loading_model':
@@ -132,12 +135,12 @@ function setState(state: SessionState, error?: { code: string; message: string }
       statusDot.classList.add('loading');
       break;
     case 'capturing':
-      toggle.textContent = 'Stop';
+      toggle.textContent = 'Stop subtitles';
       toggle.dataset.state = 'capturing';
       statusDot.classList.add('active');
       break;
     case 'error':
-      toggle.textContent = 'Start';
+      toggle.textContent = 'Start subtitles';
       toggle.dataset.state = 'idle';
       statusDot.classList.add('error');
       if (error) renderError(error);
@@ -184,6 +187,12 @@ function updateApiKeyUI(model: ModelSize) {
     const [title, placeholder] = labels[model] ?? ['API Key', ''];
     apiKeyTitle.textContent = title;
     apiKeyInput.placeholder = placeholder;
+  }
+}
+
+function updateLanguageOptions(model: ModelSize) {
+  for (const opt of languageSel.options) {
+    opt.disabled = model === 'cloud-deepgram' && DEEPGRAM_UNSUPPORTED.has(opt.value as Language);
   }
 }
 

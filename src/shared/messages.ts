@@ -1,6 +1,28 @@
 export type SessionState = 'idle' | 'loading_model' | 'capturing' | 'error';
 
-export type Language = 'fi' | 'en' | 'sv' | 'tr';
+export type Language =
+  | 'ar'
+  | 'bn'
+  | 'zh'
+  | 'en'
+  | 'fi'
+  | 'fr'
+  | 'de'
+  | 'hi'
+  | 'id'
+  | 'it'
+  | 'ja'
+  | 'ko'
+  | 'mr'
+  | 'pt'
+  | 'ru'
+  | 'es'
+  | 'sv'
+  | 'ta'
+  | 'te'
+  | 'tr'
+  | 'ur'
+  | 'vi';
 export type LocalModel = 'tiny' | 'base' | 'small';
 export type CloudProvider = 'cloud-groq' | 'cloud-openai' | 'cloud-deepgram';
 export type ModelSize = LocalModel | CloudProvider;
@@ -19,7 +41,7 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  language: 'fi',
+  language: 'en',
   model: 'base',
   mode: 'transcribe',
   fontSizePx: 20,
@@ -73,8 +95,28 @@ export const MODEL_IDS: Record<LocalModel, string> = {
 };
 
 export const LANGUAGE_TO_WHISPER: Record<Language, string> = {
-  fi: 'finnish',
+  ar: 'arabic',
+  bn: 'bengali',
+  zh: 'chinese',
   en: 'english',
+  fi: 'finnish',
+  fr: 'french',
+  de: 'german',
+  hi: 'hindi',
+  id: 'indonesian',
+  it: 'italian',
+  ja: 'japanese',
+  ko: 'korean',
+  mr: 'marathi',
+  pt: 'portuguese',
+  ru: 'russian',
+  es: 'spanish',
   sv: 'swedish',
+  ta: 'tamil',
+  te: 'telugu',
   tr: 'turkish',
+  ur: 'urdu',
+  vi: 'vietnamese',
 };
+
+export const DEEPGRAM_UNSUPPORTED: ReadonlySet<Language> = new Set(['ar', 'bn', 'mr', 'ta', 'te', 'ur']);

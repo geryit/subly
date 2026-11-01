@@ -9,7 +9,7 @@ import type {
   OffscreenToBackground,
   Settings,
 } from '../shared/messages';
-import { LANGUAGE_TO_WHISPER, MODEL_IDS, type LocalModel, type Settings } from '../shared/messages';
+import { DEEPGRAM_UNSUPPORTED, LANGUAGE_TO_WHISPER, MODEL_IDS, type LocalModel, type Settings } from '../shared/messages';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
@@ -272,6 +272,10 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
   const apiKey = getCloudApiKey(ctx.settings);
   if (!apiKey) {
     send({ type: 'OFFSCREEN_ERROR', code: 'UNKNOWN', message: 'API key is not set' });
+    return;
+  }
+  if (ctx.settings.model === 'cloud-deepgram' && DEEPGRAM_UNSUPPORTED.has(ctx.settings.language)) {
+    send({ type: 'OFFSCREEN_ERROR', code: 'UNKNOWN', message: 'Deepgram does not support this language. Pick another model.' });
     return;
   }
 
