@@ -41,7 +41,7 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  language: 'fi',
+  language: 'en',
   model: 'base',
   mode: 'transcribe',
   fontSizePx: 20,
@@ -118,3 +118,5 @@ export const LANGUAGE_TO_WHISPER: Record<Language, string> = {
   ur: 'urdu',
   vi: 'vietnamese',
 };
+
+export const DEEPGRAM_UNSUPPORTED: ReadonlySet<Language> = new Set(['ar', 'bn', 'mr', 'ta', 'te', 'ur']);
