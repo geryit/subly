@@ -45,8 +45,6 @@
           <span class="hint">Keep the spoken language or translate it</span>
           <select id="mode">
             <option value="transcribe">Transcribe (same language)</option>
-            <option value="translate">Translate to English</option>
-            <option value="translate-tr">Translate to Turkish</option>
           </select>
         </label>
         <label>
@@ -56,9 +54,11 @@
             <option value="tiny">Tiny (OpenAI Whisper, ~41 MB)</option>
             <option value="base">Base (OpenAI Whisper, ~75 MB)</option>
             <option value="small">Small (OpenAI Whisper, ~244 MB)</option>
-            <option value="cloud-groq">Cloud — Groq (free tier)</option>
-            <option value="cloud-openai">Cloud — OpenAI ($0.006/min)</option>
-            <option value="cloud-deepgram">Cloud — Deepgram (free tier)</option>
+            <option value="turbo">Large v3 Turbo (OpenAI Whisper, ~760 MB)</option>
+            <option value="cloud-groq">Cloud - Groq (free tier)</option>
+            <option value="cloud-openai">Cloud - OpenAI ($0.006/min)</option>
+            <option value="cloud-deepgram">Cloud - Deepgram (free tier)</option>
+            <option value="cloud-gemini">Cloud - Google Gemini (free tier)</option>
           </select>
         </label>
         <label id="api-key-label" hidden>

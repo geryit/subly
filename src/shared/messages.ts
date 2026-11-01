@@ -23,27 +23,30 @@ export type Language =
   | 'tr'
   | 'ur'
   | 'vi';
-export type LocalModel = 'tiny' | 'base' | 'small';
-export type CloudProvider = 'cloud-groq' | 'cloud-openai' | 'cloud-deepgram';
+export type LocalModel = 'tiny' | 'base' | 'small' | 'turbo';
+export type CloudProvider = 'cloud-groq' | 'cloud-openai' | 'cloud-deepgram' | 'cloud-gemini';
 export type ModelSize = LocalModel | CloudProvider;
 export type OverlayPosition = 'bottom' | 'top';
-export type Mode = 'transcribe' | 'translate' | 'translate-tr';
+export type Mode = 'transcribe' | 'translate';
 
 export type Settings = {
   language: Language;
   model: ModelSize;
   mode: Mode;
+  targetLanguage: Language;
   fontSizePx: number;
   position: OverlayPosition;
   groqApiKey?: string;
   openaiApiKey?: string;
   deepgramApiKey?: string;
+  geminiApiKey?: string;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
   language: 'en',
   model: 'base',
   mode: 'transcribe',
+  targetLanguage: 'en',
   fontSizePx: 20,
   position: 'bottom',
 };
@@ -92,6 +95,7 @@ export const MODEL_IDS: Record<LocalModel, string> = {
   tiny: 'Xenova/whisper-tiny',
   base: 'Xenova/whisper-base',
   small: 'Xenova/whisper-small',
+  turbo: 'onnx-community/whisper-large-v3-turbo',
 };
 
 export const LANGUAGE_TO_WHISPER: Record<Language, string> = {
@@ -117,6 +121,31 @@ export const LANGUAGE_TO_WHISPER: Record<Language, string> = {
   tr: 'turkish',
   ur: 'urdu',
   vi: 'vietnamese',
+};
+
+export const LANGUAGE_LABELS: Record<Language, string> = {
+  ar: 'Arabic',
+  bn: 'Bengali',
+  zh: 'Chinese',
+  en: 'English',
+  fi: 'Finnish',
+  fr: 'French',
+  de: 'German',
+  hi: 'Hindi',
+  id: 'Indonesian',
+  it: 'Italian',
+  ja: 'Japanese',
+  ko: 'Korean',
+  mr: 'Marathi',
+  pt: 'Portuguese',
+  ru: 'Russian',
+  es: 'Spanish',
+  sv: 'Swedish',
+  ta: 'Tamil',
+  te: 'Telugu',
+  tr: 'Turkish',
+  ur: 'Urdu',
+  vi: 'Vietnamese',
 };
 
 export const DEEPGRAM_UNSUPPORTED: ReadonlySet<Language> = new Set(['ar', 'bn', 'mr', 'ta', 'te', 'ur']);

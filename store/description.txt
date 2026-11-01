@@ -1,38 +1,41 @@
-Subly — Live AI Subtitles for Any Video
+Subly - Live AI Subtitles for Any Video
 
-Add real-time subtitles to any video playing in your browser. Subly captures tab audio and transcribes it locally using AI — no cloud services, no subscriptions, no API keys.
+Add real-time subtitles to any video playing in your browser. Subly captures tab audio and turns speech into subtitles with AI. Run it fully on your device for free, or pick a cloud model for higher accuracy with your own API key.
 
 FEATURES
 
 - Live subtitles for any HTML5 video on any website
-- Fully local transcription — your audio never leaves your device
-- Powered by OpenAI's Whisper model running directly in your browser
-- Translate to English mode — watch foreign-language content with English subtitles
-- Translate to Turkish mode — get Turkish subtitles via Google Translate
-- Supports Finnish, English, Swedish, and Turkish as source languages
+- Local mode: OpenAI's Whisper runs directly in your browser, your audio never leaves your device
+- Cloud mode: Groq, OpenAI, Deepgram or Google Gemini with your own API key (Groq, Deepgram and Gemini have free tiers)
+- 22 video languages, including English, Spanish, Chinese, Hindi, Arabic, French, German, Japanese, Turkish, Finnish and Swedish
+- Translate subtitles into any of the 22 languages
 - Customizable font size and subtitle position
 - Works in fullscreen mode
-- Three model sizes: Tiny (fast), Base (balanced), Small (best quality)
+- Four local models: Tiny (fastest), Base (balanced), Small, and Large v3 Turbo (best quality)
 - WebGPU accelerated for near real-time performance
 
 HOW IT WORKS
 
 1. Play any video in your browser
-2. Click the Subly icon and choose your settings
-3. Click Start — subtitles appear within seconds
-4. Click Stop when you're done
+2. Click the Subly icon and choose the video language, subtitle mode and model
+3. Click "Start subtitles" and subtitles appear within seconds
+4. Click "Stop subtitles" when you're done
 
-PRIVACY FIRST
+PRIVACY
 
-All speech recognition runs locally on your device using WebGPU/WASM. No audio is ever uploaded to any server. The Whisper AI model is downloaded once (~75 MB) and cached in your browser.
+With a local model, all speech recognition runs on your device using WebGPU/WASM and no audio is uploaded. The model is downloaded once (about 41-760 MB) and cached in your browser.
 
-Note: "Translate to Turkish" mode sends the transcribed text (not audio) to Google Translate.
+With a cloud model, short audio clips are sent only to the provider you choose, using your own API key.
+
+Most translations send the transcribed text, not audio, to Google Translate. Translating to English with Whisper models, Groq or OpenAI, and any translation with Google Gemini, happen without Google Translate.
+
+Full privacy policy: github.com/geryit/subly/blob/main/PRIVACY_POLICY.md
 
 REQUIREMENTS
 
 - Chrome 116 or later
-- WebGPU recommended for best performance (Chrome 113+)
-- ~75-244 MB storage for AI model (downloaded on first use)
+- WebGPU recommended for best performance
+- About 41-760 MB storage for a local model (downloaded on first use)
 
 OPEN SOURCE
 

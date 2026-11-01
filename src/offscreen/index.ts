@@ -9,7 +9,7 @@ import type {
   OffscreenToBackground,
   Settings,
 } from '../shared/messages';
-import { DEEPGRAM_UNSUPPORTED, LANGUAGE_TO_WHISPER, MODEL_IDS, type LocalModel, type Settings } from '../shared/messages';
+import { DEEPGRAM_UNSUPPORTED, LANGUAGE_LABELS, LANGUAGE_TO_WHISPER, MODEL_IDS, type LocalModel, type Settings } from '../shared/messages';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
@@ -158,10 +158,14 @@ async function ensureAsrPipeline(settings: Settings) {
     }
   };
 
+  const dtype = settings.model === 'turbo'
+    ? { encoder_model: 'q4', decoder_model_merged: 'q4' } as const
+    : 'fp32';
+
   try {
     const created = await pipeline('automatic-speech-recognition', modelId, {
       device: 'webgpu',
-      dtype: 'fp32',
+      dtype,
       progress_callback: progressReporter,
     });
     asr = created as unknown as AutomaticSpeechRecognitionPipeline;
@@ -173,7 +177,7 @@ async function ensureAsrPipeline(settings: Settings) {
     try {
       const created = await pipeline('automatic-speech-recognition', modelId, {
         device: 'wasm',
-        dtype: 'fp32',
+        dtype,
         progress_callback: progressReporter,
       });
       asr = created as unknown as AutomaticSpeechRecognitionPipeline;
@@ -187,7 +191,7 @@ async function ensureAsrPipeline(settings: Settings) {
 }
 
 async function translateText(text: string, targetLang: string): Promise<string> {
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
   const res = await fetch(url);
   const data = await res.json();
   return data[0].map((s: [string]) => s[0]).join('');
@@ -232,7 +236,9 @@ async function runLocalTranscription(audioAtNative: Float32Array) {
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
 
   try {
-    const whisperTask = ctx.settings.mode === 'translate-tr' ? 'translate' : ctx.settings.mode;
+    const target = ctx.settings.mode === 'translate' ? ctx.settings.targetLanguage : null;
+    const nativeEnglish = target === 'en' && ctx.settings.model !== 'turbo';
+    const whisperTask = nativeEnglish ? 'translate' : 'transcribe';
     const result = await asr(resampled, {
       language,
       task: whisperTask,
@@ -242,11 +248,11 @@ async function runLocalTranscription(audioAtNative: Float32Array) {
       ? result.map((r) => r.text).join(' ')
       : result.text;
     text = text.trim();
-    if (text.length > 0 && ctx.settings.mode === 'translate-tr') {
+    if (text.length > 0 && target && !nativeEnglish) {
       try {
-        text = await translateText(text, 'tr');
+        text = await translateText(text, target);
       } catch (err) {
-        console.warn('[Subly] translation failed, showing English:', err);
+        console.warn('[Subly] translation failed, showing original:', err);
       }
     }
     if (text.length > 0) {
@@ -262,6 +268,7 @@ function getCloudApiKey(s: Settings): string | undefined {
     case 'cloud-groq': return s.groqApiKey;
     case 'cloud-openai': return s.openaiApiKey;
     case 'cloud-deepgram': return s.deepgramApiKey;
+    case 'cloud-gemini': return s.geminiApiKey;
     default: return undefined;
   }
 }
@@ -281,7 +288,9 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
 
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
   const wavBlob = encodeWav(resampled, TARGET_SAMPLE_RATE);
-  const translate = ctx.settings.mode === 'translate' || ctx.settings.mode === 'translate-tr';
+  const target = ctx.settings.mode === 'translate' ? ctx.settings.targetLanguage : null;
+  const whisperCloud = ctx.settings.model === 'cloud-groq' || ctx.settings.model === 'cloud-openai';
+  const translate = target === 'en' && whisperCloud;
 
   let text: string;
   try {
@@ -301,6 +310,9 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
       case 'cloud-deepgram':
         text = await callDeepgram(wavBlob, apiKey, ctx.settings.language);
         break;
+      case 'cloud-gemini':
+        text = await callGemini(wavBlob, apiKey, ctx.settings);
+        break;
       default:
         return;
     }
@@ -310,13 +322,7 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
   }
 
   text = text.trim();
-  // Deepgram has no translate endpoint — always use Google Translate for translate modes.
-  // Groq/OpenAI handle translate natively, so only translate-tr needs Google Translate.
-  const needsGoogleTranslate =
-    (ctx.settings.mode === 'translate-tr') ||
-    (ctx.settings.model === 'cloud-deepgram' && translate);
-  if (text.length > 0 && needsGoogleTranslate) {
-    const target = ctx.settings.mode === 'translate-tr' ? 'tr' : 'en';
+  if (text.length > 0 && target && !translate && ctx.settings.model !== 'cloud-gemini') {
     try {
       text = await translateText(text, target);
     } catch (err) {
@@ -356,6 +362,63 @@ async function callOpenAICompatible(
   }
   const data = await res.json() as { text: string };
   return data.text;
+}
+
+async function callGemini(wavBlob: Blob, apiKey: string, settings: Settings): Promise<string> {
+  const spoken = LANGUAGE_TO_WHISPER[settings.language];
+  const instruction = settings.mode === 'translate'
+    ? `Translate the speech into ${LANGUAGE_LABELS[settings.targetLanguage]}.`
+    : 'Transcribe the speech in its original language.';
+  const prompt = `The audio is a short clip from a video where people speak ${spoken}. ${instruction} `
+    + 'Put only the subtitle text in "text". If there is no speech, set "text" to an empty string.';
+
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: 'audio/wav', data: await blobToBase64(wavBlob) } },
+          { text: prompt },
+        ],
+      }],
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: { text: { type: 'STRING' } },
+          required: ['text'],
+        },
+      },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('[Subly cloud] Gemini error', res.status, body);
+    if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+      send({ type: 'OFFSCREEN_ERROR', code: 'UNKNOWN', message: `Gemini request failed (${res.status}). Check your API key.` });
+    }
+    return '';
+  }
+  const data = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  const raw = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+  try {
+    const parsed = JSON.parse(raw) as { text?: unknown };
+    return typeof parsed.text === 'string' ? parsed.text : '';
+  } catch {
+    return '';
+  }
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
 }
 
 async function callDeepgram(

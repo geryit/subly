@@ -126,6 +126,7 @@ button#toggle[data-state="loading_model"] {
 }
 
 .settings select,
+.settings input[type="password"],
 .settings input[type="range"] {
   padding: 6px 8px;
   background: var(--surface);
