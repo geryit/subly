@@ -22,7 +22,8 @@
 
       <section class="settings">
         <label>
-          Source language
+          Video language
+          <span class="hint">The language people speak in the video</span>
           <select id="language">
             <option value="ar">Arabic</option>
             <option value="bn">Bengali</option>
@@ -49,7 +50,8 @@
           </select>
         </label>
         <label>
-          Mode
+          Subtitles
+          <span class="hint">Keep the spoken language or translate it</span>
           <select id="mode">
             <option value="transcribe">Transcribe (same language)</option>
             <option value="translate">Translate to English</option>
@@ -58,6 +60,7 @@
         </label>
         <label>
           Model
+          <span class="hint">Local runs in your browser, cloud needs an API key</span>
           <select id="model">
             <option value="tiny">Tiny (~41 MB, fastest)</option>
             <option value="base">Base (~75 MB, balanced)</option>
@@ -69,6 +72,7 @@
         </label>
         <label id="api-key-label" hidden>
           <span id="api-key-title">API Key</span>
+          <span class="hint">Your personal key from the provider's website</span>
           <input id="api-key" type="password" placeholder="gsk_..." />
         </label>
         <label>
@@ -77,6 +81,7 @@
         </label>
         <label>
           Position
+          <span class="hint">Where subtitles appear on the video</span>
           <select id="position">
             <option value="bottom">Bottom</option>
             <option value="top">Top</option>
