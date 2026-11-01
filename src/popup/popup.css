@@ -114,6 +114,10 @@ button#toggle[data-state="loading_model"] {
   color: var(--muted);
 }
 
+.settings label[hidden] {
+  display: none;
+}
+
 .settings select,
 .settings input[type="range"] {
   padding: 6px 8px;
