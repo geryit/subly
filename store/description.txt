@@ -8,8 +8,7 @@ FEATURES
 - Local mode: OpenAI's Whisper runs directly in your browser, your audio never leaves your device
 - Cloud mode: Groq, OpenAI, Deepgram or Google Gemini with your own API key (Groq, Deepgram and Gemini have free tiers)
 - 22 video languages, including English, Spanish, Chinese, Hindi, Arabic, French, German, Japanese, Turkish, Finnish and Swedish
-- Translate to English mode for foreign-language videos
-- Translate to Turkish mode
+- Translate subtitles into any of the 22 languages
 - Customizable font size and subtitle position
 - Works in fullscreen mode
 - Four local models: Tiny (fastest), Base (balanced), Small, and Large v3 Turbo (best quality)
@@ -28,7 +27,7 @@ With a local model, all speech recognition runs on your device using WebGPU/WASM
 
 With a cloud model, short audio clips are sent only to the provider you choose, using your own API key.
 
-Translate to Turkish (and Translate to English with Deepgram or Large v3 Turbo) sends the transcribed text, not audio, to Google Translate. Google Gemini does its own translation.
+Most translations send the transcribed text, not audio, to Google Translate. Translating to English with Whisper models, Groq or OpenAI, and any translation with Google Gemini, happen without Google Translate.
 
 Full privacy policy: github.com/geryit/subly/blob/main/PRIVACY_POLICY.md
 

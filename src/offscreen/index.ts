@@ -9,7 +9,7 @@ import type {
   OffscreenToBackground,
   Settings,
 } from '../shared/messages';
-import { DEEPGRAM_UNSUPPORTED, LANGUAGE_TO_WHISPER, MODEL_IDS, type LocalModel, type Settings } from '../shared/messages';
+import { DEEPGRAM_UNSUPPORTED, LANGUAGE_LABELS, LANGUAGE_TO_WHISPER, MODEL_IDS, type LocalModel, type Settings } from '../shared/messages';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
@@ -236,8 +236,9 @@ async function runLocalTranscription(audioAtNative: Float32Array) {
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
 
   try {
-    const canTranslate = ctx.settings.model !== 'turbo';
-    const whisperTask = canTranslate && ctx.settings.mode !== 'transcribe' ? 'translate' : 'transcribe';
+    const target = ctx.settings.mode === 'translate' ? ctx.settings.targetLanguage : null;
+    const nativeEnglish = target === 'en' && ctx.settings.model !== 'turbo';
+    const whisperTask = nativeEnglish ? 'translate' : 'transcribe';
     const result = await asr(resampled, {
       language,
       task: whisperTask,
@@ -247,10 +248,7 @@ async function runLocalTranscription(audioAtNative: Float32Array) {
       ? result.map((r) => r.text).join(' ')
       : result.text;
     text = text.trim();
-    const target = ctx.settings.mode === 'translate-tr' ? 'tr'
-      : ctx.settings.mode === 'translate' && !canTranslate ? 'en'
-      : null;
-    if (text.length > 0 && target) {
+    if (text.length > 0 && target && !nativeEnglish) {
       try {
         text = await translateText(text, target);
       } catch (err) {
@@ -290,7 +288,9 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
 
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
   const wavBlob = encodeWav(resampled, TARGET_SAMPLE_RATE);
-  const translate = ctx.settings.mode === 'translate' || ctx.settings.mode === 'translate-tr';
+  const target = ctx.settings.mode === 'translate' ? ctx.settings.targetLanguage : null;
+  const whisperCloud = ctx.settings.model === 'cloud-groq' || ctx.settings.model === 'cloud-openai';
+  const translate = target === 'en' && whisperCloud;
 
   let text: string;
   try {
@@ -322,13 +322,7 @@ async function runCloudTranscription(audioAtNative: Float32Array) {
   }
 
   text = text.trim();
-  // Deepgram has no translate endpoint — always use Google Translate for translate modes.
-  // Groq/OpenAI handle translate natively, so only translate-tr needs Google Translate.
-  const needsGoogleTranslate = ctx.settings.model !== 'cloud-gemini' && (
-    (ctx.settings.mode === 'translate-tr') ||
-    (ctx.settings.model === 'cloud-deepgram' && translate));
-  if (text.length > 0 && needsGoogleTranslate) {
-    const target = ctx.settings.mode === 'translate-tr' ? 'tr' : 'en';
+  if (text.length > 0 && target && !translate && ctx.settings.model !== 'cloud-gemini') {
     try {
       text = await translateText(text, target);
     } catch (err) {
@@ -372,9 +366,8 @@ async function callOpenAICompatible(
 
 async function callGemini(wavBlob: Blob, apiKey: string, settings: Settings): Promise<string> {
   const spoken = LANGUAGE_TO_WHISPER[settings.language];
-  const instruction =
-    settings.mode === 'translate' ? 'Translate the speech into English.'
-    : settings.mode === 'translate-tr' ? 'Translate the speech into Turkish.'
+  const instruction = settings.mode === 'translate'
+    ? `Translate the speech into ${LANGUAGE_LABELS[settings.targetLanguage]}.`
     : 'Transcribe the speech in its original language.';
   const prompt = `The audio is a short clip from a video where people speak ${spoken}. ${instruction} `
     + 'Put only the subtitle text in "text". If there is no speech, set "text" to an empty string.';

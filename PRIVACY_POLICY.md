@@ -16,10 +16,9 @@ Subly is a Chrome extension that adds live subtitles to HTML5 videos by capturin
   - **Cloud models (Groq, OpenAI, Deepgram, Google Gemini):** short audio clips (about 5 seconds each) are sent to the provider you selected, using your own API key, so the provider can return the text. Subly does not send audio anywhere else.
 
 ### Translation Data
-- **Google Translate** receives the **transcribed text** (not audio) in these cases:
-  - "Translate to Turkish" with a local model, Groq, OpenAI or Deepgram
-  - "Translate to English" with Deepgram or the Large v3 Turbo local model (it cannot translate on its own)
-- **Google Gemini** handles translation itself, so no text is sent to Google Translate when Gemini is selected
+- When you pick a "Translate to ..." option, **Google Translate** receives the **transcribed text** (not audio), except in these cases:
+  - "Translate to English" with Tiny, Base, Small, Groq or OpenAI, because Whisper translates to English itself
+  - Any translation with Google Gemini, because Gemini translates itself
 - "Transcribe" mode never sends text to Google Translate
 
 ### API Keys

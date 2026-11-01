@@ -1,6 +1,7 @@
 import {
   DEEPGRAM_UNSUPPORTED,
   DEFAULT_SETTINGS,
+  LANGUAGE_LABELS,
   type BackgroundToPopup,
   type Language,
   type Mode,
@@ -37,6 +38,7 @@ let activeTabId: number | null = null;
 
 async function init() {
   settings = await loadSettings();
+  populateTranslateOptions();
   applySettingsToControls();
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -60,8 +62,14 @@ async function init() {
   });
 }
 
+function populateTranslateOptions() {
+  for (const [code, label] of Object.entries(LANGUAGE_LABELS)) {
+    modeSel.add(new Option(`Translate to ${label}`, `translate:${code}`));
+  }
+}
+
 function applySettingsToControls() {
-  modeSel.value = settings.mode;
+  modeSel.value = settings.mode === 'translate' ? `translate:${settings.targetLanguage}` : 'transcribe';
   languageSel.value = settings.language;
   modelSel.value = settings.model;
   apiKeyInput.value = getApiKey(settings);
@@ -74,7 +82,9 @@ function applySettingsToControls() {
 
 function wireSettingControls() {
   modeSel.addEventListener('change', async () => {
-    settings.mode = modeSel.value as Mode;
+    const [mode, target] = modeSel.value.split(':') as [Mode, Language | undefined];
+    settings.mode = mode;
+    if (target) settings.targetLanguage = target;
     await saveSettings(settings);
     pushSettings();
   });
