@@ -24,7 +24,7 @@ export type Language =
   | 'ur'
   | 'vi';
 export type LocalModel = 'tiny' | 'base' | 'small';
-export type CloudProvider = 'cloud-groq' | 'cloud-openai' | 'cloud-deepgram';
+export type CloudProvider = 'cloud-groq' | 'cloud-openai' | 'cloud-deepgram' | 'cloud-gemini';
 export type ModelSize = LocalModel | CloudProvider;
 export type OverlayPosition = 'bottom' | 'top';
 export type Mode = 'transcribe' | 'translate' | 'translate-tr';
@@ -38,6 +38,7 @@ export type Settings = {
   groqApiKey?: string;
   openaiApiKey?: string;
   deepgramApiKey?: string;
+  geminiApiKey?: string;
 };
 
 export const DEFAULT_SETTINGS: Settings = {

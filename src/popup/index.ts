@@ -183,6 +183,7 @@ function updateApiKeyUI(model: ModelSize) {
       'cloud-groq': ['Groq API Key', 'gsk_...'],
       'cloud-openai': ['OpenAI API Key', 'sk-...'],
       'cloud-deepgram': ['Deepgram API Key', 'your key'],
+      'cloud-gemini': ['Gemini API Key', 'AIza...'],
     };
     const [title, placeholder] = labels[model] ?? ['API Key', ''];
     apiKeyTitle.textContent = title;
@@ -201,6 +202,7 @@ function getApiKey(s: Settings): string {
     case 'cloud-groq': return s.groqApiKey ?? '';
     case 'cloud-openai': return s.openaiApiKey ?? '';
     case 'cloud-deepgram': return s.deepgramApiKey ?? '';
+    case 'cloud-gemini': return s.geminiApiKey ?? '';
     default: return '';
   }
 }
@@ -211,6 +213,7 @@ function setApiKey(s: Settings, key: string) {
     case 'cloud-groq': s.groqApiKey = val; break;
     case 'cloud-openai': s.openaiApiKey = val; break;
     case 'cloud-deepgram': s.deepgramApiKey = val; break;
+    case 'cloud-gemini': s.geminiApiKey = val; break;
   }
 }
 
