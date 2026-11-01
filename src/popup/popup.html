@@ -11,15 +11,6 @@
         <span id="status-dot" aria-label="status"></span>
       </header>
 
-      <button id="toggle" type="button" data-state="idle">Start</button>
-
-      <div id="progress" hidden>
-        <div id="progress-bar"></div>
-        <div id="progress-text">Loading model…</div>
-      </div>
-
-      <div id="error" hidden></div>
-
       <section class="settings">
         <label>
           Video language
@@ -88,6 +79,15 @@
           </select>
         </label>
       </section>
+
+      <button id="toggle" type="button" data-state="idle">Start subtitles</button>
+
+      <div id="progress" hidden>
+        <div id="progress-bar"></div>
+        <div id="progress-text">Loading model…</div>
+      </div>
+
+      <div id="error" hidden></div>
     </main>
     <script type="module" src="index.ts"></script>
   </body>

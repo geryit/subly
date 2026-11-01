@@ -126,7 +126,7 @@ function setState(state: SessionState, error?: { code: string; message: string }
 
   switch (state) {
     case 'idle':
-      toggle.textContent = 'Start';
+      toggle.textContent = 'Start subtitles';
       toggle.dataset.state = 'idle';
       break;
     case 'loading_model':
@@ -135,12 +135,12 @@ function setState(state: SessionState, error?: { code: string; message: string }
       statusDot.classList.add('loading');
       break;
     case 'capturing':
-      toggle.textContent = 'Stop';
+      toggle.textContent = 'Stop subtitles';
       toggle.dataset.state = 'capturing';
       statusDot.classList.add('active');
       break;
     case 'error':
-      toggle.textContent = 'Start';
+      toggle.textContent = 'Start subtitles';
       toggle.dataset.state = 'idle';
       statusDot.classList.add('error');
       if (error) renderError(error);
