@@ -3,7 +3,7 @@ import { defineManifest } from '@crxjs/vite-plugin';
 export default defineManifest({
   manifest_version: 3,
   name: 'Subly',
-  version: '0.2.0',
+  version: '0.5.0',
   description: 'Live AI subtitles for any HTML5 video',
   action: {
     default_popup: 'src/popup/popup.html',
