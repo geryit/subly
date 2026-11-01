@@ -12,7 +12,7 @@ FEATURES
 - Translate to Turkish mode
 - Customizable font size and subtitle position
 - Works in fullscreen mode
-- Three local model sizes: Tiny (fastest), Base (balanced), Small (best quality)
+- Four local models: Tiny (fastest), Base (balanced), Small, and Large v3 Turbo (best quality)
 - WebGPU accelerated for near real-time performance
 
 HOW IT WORKS
@@ -24,11 +24,11 @@ HOW IT WORKS
 
 PRIVACY
 
-With a local model, all speech recognition runs on your device using WebGPU/WASM and no audio is uploaded. The model is downloaded once (about 41-244 MB) and cached in your browser.
+With a local model, all speech recognition runs on your device using WebGPU/WASM and no audio is uploaded. The model is downloaded once (about 41-760 MB) and cached in your browser.
 
 With a cloud model, short audio clips are sent only to the provider you choose, using your own API key.
 
-Translate to Turkish (and Translate to English with Deepgram) sends the transcribed text, not audio, to Google Translate. Google Gemini does its own translation.
+Translate to Turkish (and Translate to English with Deepgram or Large v3 Turbo) sends the transcribed text, not audio, to Google Translate. Google Gemini does its own translation.
 
 Full privacy policy: github.com/geryit/subly/blob/main/PRIVACY_POLICY.md
 
@@ -36,7 +36,7 @@ REQUIREMENTS
 
 - Chrome 116 or later
 - WebGPU recommended for best performance
-- About 41-244 MB storage for a local model (downloaded on first use)
+- About 41-760 MB storage for a local model (downloaded on first use)
 
 OPEN SOURCE
 
