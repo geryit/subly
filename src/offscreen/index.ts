@@ -158,10 +158,14 @@ async function ensureAsrPipeline(settings: Settings) {
     }
   };
 
+  const dtype = settings.model === 'turbo'
+    ? { encoder_model: 'q4', decoder_model_merged: 'q4' } as const
+    : 'fp32';
+
   try {
     const created = await pipeline('automatic-speech-recognition', modelId, {
       device: 'webgpu',
-      dtype: 'fp32',
+      dtype,
       progress_callback: progressReporter,
     });
     asr = created as unknown as AutomaticSpeechRecognitionPipeline;
@@ -173,7 +177,7 @@ async function ensureAsrPipeline(settings: Settings) {
     try {
       const created = await pipeline('automatic-speech-recognition', modelId, {
         device: 'wasm',
-        dtype: 'fp32',
+        dtype,
         progress_callback: progressReporter,
       });
       asr = created as unknown as AutomaticSpeechRecognitionPipeline;
@@ -187,7 +191,7 @@ async function ensureAsrPipeline(settings: Settings) {
 }
 
 async function translateText(text: string, targetLang: string): Promise<string> {
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
   const res = await fetch(url);
   const data = await res.json();
   return data[0].map((s: [string]) => s[0]).join('');
@@ -232,7 +236,8 @@ async function runLocalTranscription(audioAtNative: Float32Array) {
   const resampled = await resampleTo16k(audioAtNative, ctx.nativeSampleRate);
 
   try {
-    const whisperTask = ctx.settings.mode === 'translate-tr' ? 'translate' : ctx.settings.mode;
+    const canTranslate = ctx.settings.model !== 'turbo';
+    const whisperTask = canTranslate && ctx.settings.mode !== 'transcribe' ? 'translate' : 'transcribe';
     const result = await asr(resampled, {
       language,
       task: whisperTask,
@@ -242,11 +247,14 @@ async function runLocalTranscription(audioAtNative: Float32Array) {
       ? result.map((r) => r.text).join(' ')
       : result.text;
     text = text.trim();
-    if (text.length > 0 && ctx.settings.mode === 'translate-tr') {
+    const target = ctx.settings.mode === 'translate-tr' ? 'tr'
+      : ctx.settings.mode === 'translate' && !canTranslate ? 'en'
+      : null;
+    if (text.length > 0 && target) {
       try {
-        text = await translateText(text, 'tr');
+        text = await translateText(text, target);
       } catch (err) {
-        console.warn('[Subly] translation failed, showing English:', err);
+        console.warn('[Subly] translation failed, showing original:', err);
       }
     }
     if (text.length > 0) {

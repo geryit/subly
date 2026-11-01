@@ -12,13 +12,13 @@ Subly is a Chrome extension that adds live subtitles to HTML5 videos by capturin
 - Subly captures audio **only** from the active browser tab, and only after you click "Start subtitles"
 - Audio capture stops immediately when you click "Stop subtitles" or close the tab
 - Where the audio goes depends on the model you choose:
-  - **Local models (Tiny, Base, Small):** audio is processed **entirely on your device** by a Whisper model running in your browser. No audio leaves your device.
+  - **Local models (Tiny, Base, Small, Large v3 Turbo):** audio is processed **entirely on your device** by a Whisper model running in your browser. No audio leaves your device.
   - **Cloud models (Groq, OpenAI, Deepgram, Google Gemini):** short audio clips (about 5 seconds each) are sent to the provider you selected, using your own API key, so the provider can return the text. Subly does not send audio anywhere else.
 
 ### Translation Data
 - **Google Translate** receives the **transcribed text** (not audio) in these cases:
   - "Translate to Turkish" with a local model, Groq, OpenAI or Deepgram
-  - "Translate to English" with Deepgram
+  - "Translate to English" with Deepgram or the Large v3 Turbo local model (it cannot translate on its own)
 - **Google Gemini** handles translation itself, so no text is sent to Google Translate when Gemini is selected
 - "Transcribe" mode never sends text to Google Translate
 
@@ -28,7 +28,7 @@ Subly is a Chrome extension that adds live subtitles to HTML5 videos by capturin
 - Keys are sent only to the provider they belong to, to authenticate your requests
 
 ### Model Downloads
-- On first use, a local model (about 41 MB to 244 MB depending on size) is downloaded from Hugging Face (huggingface.co)
+- On first use, a local model (about 41 MB to 760 MB depending on size) is downloaded from Hugging Face (huggingface.co)
 - The model is cached locally in your browser and does not need to be re-downloaded
 - No personal data is sent during model download
 

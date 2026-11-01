@@ -23,7 +23,7 @@ export type Language =
   | 'tr'
   | 'ur'
   | 'vi';
-export type LocalModel = 'tiny' | 'base' | 'small';
+export type LocalModel = 'tiny' | 'base' | 'small' | 'turbo';
 export type CloudProvider = 'cloud-groq' | 'cloud-openai' | 'cloud-deepgram' | 'cloud-gemini';
 export type ModelSize = LocalModel | CloudProvider;
 export type OverlayPosition = 'bottom' | 'top';
@@ -93,6 +93,7 @@ export const MODEL_IDS: Record<LocalModel, string> = {
   tiny: 'Xenova/whisper-tiny',
   base: 'Xenova/whisper-base',
   small: 'Xenova/whisper-small',
+  turbo: 'onnx-community/whisper-large-v3-turbo',
 };
 
 export const LANGUAGE_TO_WHISPER: Record<Language, string> = {
